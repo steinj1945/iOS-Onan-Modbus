@@ -1,0 +1,23 @@
+import SwiftUI
+
+@main
+struct OnanPasskeyApp: App {
+    @StateObject private var peripheral   = PasskeyPeripheral()
+    @StateObject private var enrollment   = EnrollmentManager()
+    @StateObject private var watchSync    = WatchSyncManager.shared
+
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .environmentObject(peripheral)
+                .environmentObject(enrollment)
+                .environmentObject(watchSync)
+                .onOpenURL { url in
+                    guard url.scheme == DeepLink.scheme else { return }
+                    try? enrollment.enroll(from: url)
+                    // Auto-push to Watch after successful enrollment
+                    watchSync.pushSecretToWatch()
+                }
+        }
+    }
+}

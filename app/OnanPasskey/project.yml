@@ -1,0 +1,39 @@
+# XcodeGen project definition
+# Run: xcodegen generate
+# https://github.com/yonaskolb/XcodeGen
+
+name: OnanPasskey
+options:
+  bundleIdPrefix: com.onan
+  deploymentTarget:
+    iOS: "17.0"
+    watchOS: "10.0"
+
+targets:
+  OnanPasskey:
+    type: application
+    platform: iOS
+    sources:
+      - OnanPasskey
+      - OnanPasskeyShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.onan.passkey
+        SWIFT_VERSION: "5.9"
+    capabilities:
+      bluetooth-peripheral: {}
+      bluetooth-central: {}
+
+  OnanPasskeyWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - OnanPasskeyWatch
+      - OnanPasskeyShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.onan.passkey.watch
+        SWIFT_VERSION: "5.9"
+    capabilities:
+      bluetooth-peripheral: {}
+      bluetooth-central: {}
