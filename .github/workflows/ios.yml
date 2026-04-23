@@ -11,31 +11,16 @@ on:
 env:
   PROJECT_DIR: app/CopCarPasskey
   SCHEME: CopCarPasskey
-  IOS_DESTINATION: "platform=iOS Simulator,name=iPhone 16"
-  WATCHOS_DESTINATION: "platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)"
+  IOS_DESTINATION: "platform=iOS Simulator,name=iPhone 17 Pro"
+  WATCHOS_DESTINATION: "platform=watchOS Simulator,name=Apple Watch Series 11 (46mm)"
 
 jobs:
   build:
     name: Build (iOS + watchOS)
-    runs-on: macos-15
+    runs-on: macos-26
 
     steps:
       - uses: actions/checkout@v4
-
-      - name: Select Xcode
-        run: |
-          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
-          xcodebuild -version
-
-      - name: Boot iOS simulator
-        run: |
-          UDID=$(xcrun simctl list devices available | grep "iPhone 16 (" | grep -v "Plus\|Pro" | head -1 | sed 's/.*(\([^)]*\)).*/\1/')
-          if [ -z "$UDID" ]; then
-            echo "Available simulators:"; xcrun simctl list devices available
-            exit 1
-          fi
-          xcrun simctl boot "$UDID" || true
-          echo "Booted simulator: $UDID"
 
       - name: Install XcodeGen
         run: brew install xcodegen
