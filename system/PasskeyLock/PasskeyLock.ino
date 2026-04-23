@@ -1,4 +1,4 @@
-#include <EEPROM.h>
+#include <Preferences.h>
 #include "Config.h"
 #include "StateMachine.h"
 
@@ -6,8 +6,17 @@ uint8_t g_hmac_key[HMAC_KEY_LEN];
 
 void setup() {
     Serial.begin(115200);
-    // Load secret from EEPROM (written by Provisioning.ino)
-    eeprom_read_block(g_hmac_key, (const void *)HMAC_KEY_EEPROM, HMAC_KEY_LEN);
+
+    // Load 32-byte secret from NVS (written once by Provisioning.ino)
+    Preferences prefs;
+    prefs.begin(NVS_NAMESPACE, /*readOnly=*/true);
+    size_t len = prefs.getBytes(NVS_KEY_SECRET, g_hmac_key, HMAC_KEY_LEN);
+    prefs.end();
+
+    if (len != HMAC_KEY_LEN) {
+        Serial.println("ERROR: No key in NVS. Flash Provisioning.ino first.");
+    }
+
     sm_init();
 }
 

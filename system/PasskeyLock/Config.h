@@ -1,14 +1,10 @@
 #pragma once
 
-// ── Pin assignments ───────────────────────────────────────────────
-#define PIN_BUTTON      2   // INT0 — wake-from-sleep interrupt
-#define PIN_RELAY       7   // Relay IN — HIGH = energised (open)
-#define PIN_STATUS_LED  13  // Built-in LED for state feedback
-
-// ── BlueSMiRF v2 UART ────────────────────────────────────────────
-#define BT_BAUD         115200
-#define BT_RX_PIN       10  // SoftwareSerial RX (connect to BT TX)
-#define BT_TX_PIN       11  // SoftwareSerial TX (connect to BT RX)
+// ── Pin assignments (ESP32) ───────────────────────────────────────
+// Adjust to match your specific board layout.
+#define PIN_BUTTON      0   // GPIO0 — boot button, or any RTC-capable GPIO
+#define PIN_RELAY       26  // GPIO26 — relay IN (HIGH = energised / open)
+#define PIN_STATUS_LED  2   // GPIO2  — built-in LED on most ESP32 dev boards
 
 // ── BLE service / characteristic UUIDs ──────────────────────────
 // Must match the iOS/Watch app exactly.
@@ -19,7 +15,7 @@
 
 // ── Timing (ms) ──────────────────────────────────────────────────
 #define SCAN_TIMEOUT_MS         15000   // Give up scanning after 15 s
-#define CONNECT_TIMEOUT_MS       5000   // Give up connecting after 5 s
+#define CONNECT_TIMEOUT_MS       8000   // Give up connecting after 8 s
 #define AUTH_TIMEOUT_MS          5000   // Give up waiting for HMAC after 5 s
 #define UNLOCK_AUTO_CLOSE_MS   300000   // Auto-relock after 5 min
 
@@ -28,13 +24,12 @@
 // -50 dBm ≈ 0.3 m (NFC-style Watch tap)
 #define RSSI_THRESHOLD          -70
 
-// ── HMAC key (32 bytes, loaded from EEPROM at boot) ──────────────
-// Write the key using system/Provisioning/Provisioning.ino before
-// flashing this sketch. EEPROM address 0–31 holds the 32-byte secret.
-#define HMAC_KEY_LEN      32
-#define HMAC_KEY_EEPROM   0     // EEPROM start address
+// ── HMAC key (32 bytes, loaded from NVS at boot) ─────────────────
+// Written once by system/Provisioning/Provisioning.ino via Preferences.
+#define HMAC_KEY_LEN    32
+#define NVS_NAMESPACE   "passkey"
+#define NVS_KEY_SECRET  "secret"
 
-// g_hmac_key is populated in setup() via eeprom_read_block().
-// Declared extern here; defined in PasskeyLock.ino.
+// g_hmac_key populated in setup(). Declared extern; defined in PasskeyLock.ino.
 extern uint8_t g_hmac_key[HMAC_KEY_LEN];
-#define HMAC_KEY     g_hmac_key
+#define HMAC_KEY g_hmac_key

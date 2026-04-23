@@ -1,34 +1,31 @@
 #pragma once
 #include <stdint.h>
 
-// Initialise BlueSMiRF v2 via SoftwareSerial and put it in BLE central mode.
+// Initialise the ESP32 BLE stack as a central (client).
 void bt_init();
 
-// Begin scanning for a peripheral advertising UUID_SERVICE.
-// Resets internal found/connected state.
+// Begin an async BLE scan for peripherals advertising UUID_SERVICE.
+// Returns immediately; poll bt_scan_found() for results.
 void bt_scan_start();
 
-// Returns true once a device with RSSI >= RSSI_THRESHOLD has been found.
+// Returns true once a device with RSSI >= RSSI_THRESHOLD is found.
 bool bt_scan_found();
 
-// Initiate connection to the found device. Non-blocking; poll bt_connected().
+// Connect to the found device and discover GATT characteristics.
+// Blocking — typically completes in 1–3 s.
 void bt_connect();
 
 bool bt_connected();
-
 void bt_disconnect();
-
-// Put BlueSMiRF into low-power command mode between uses.
-void bt_sleep();
 
 // Write the 32-byte nonce to the CHALLENGE characteristic.
 void bt_send_challenge(const uint8_t *nonce, uint8_t len);
 
-// Returns true when the peripheral has written to the RESPONSE characteristic.
+// Returns true when the peripheral has notified the RESPONSE characteristic.
 bool bt_response_ready();
 
-// Copy the response bytes into buf (caller must provide 32 bytes).
+// Copy the 32-byte HMAC response into buf.
 void bt_read_response(uint8_t *buf, uint8_t len);
 
-// Write a 1-byte status value to the STATUS characteristic (notify).
+// Write a 1-byte status value to the STATUS characteristic.
 void bt_notify_status(uint8_t status);
