@@ -1,0 +1,50 @@
+name: iOS App
+
+on:
+  push:
+    branches: [main]
+    paths: ["app/CopCarPasskey/**", ".github/workflows/ios.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["app/CopCarPasskey/**", ".github/workflows/ios.yml"]
+
+env:
+  PROJECT_DIR: app/CopCarPasskey
+  SCHEME: CopCarPasskey
+  IOS_DESTINATION: "platform=iOS Simulator,name=iPhone 16,OS=latest"
+  WATCHOS_DESTINATION: "platform=watchOS Simulator,name=Apple Watch Series 10 (46mm),OS=latest"
+
+jobs:
+  build:
+    name: Build (iOS + watchOS)
+    runs-on: macos-15
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install XcodeGen
+        run: brew install xcodegen
+
+      - name: Generate Xcode project
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: xcodegen generate
+
+      - name: Build iOS target
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          xcodebuild build \
+            -project CopCarPasskey.xcodeproj \
+            -scheme "${{ env.SCHEME }}" \
+            -destination "${{ env.IOS_DESTINATION }}" \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty && exit ${PIPESTATUS[0]}
+
+      - name: Build watchOS target
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          xcodebuild build \
+            -project CopCarPasskey.xcodeproj \
+            -scheme CopCarPasskeyWatch \
+            -destination "${{ env.WATCHOS_DESTINATION }}" \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty && exit ${PIPESTATUS[0]}

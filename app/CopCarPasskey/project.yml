@@ -1,0 +1,39 @@
+# XcodeGen project definition
+# Run: xcodegen generate
+# https://github.com/yonaskolb/XcodeGen
+
+name: CopCarPasskey
+options:
+  bundleIdPrefix: net.dtgllc.CopCar
+  deploymentTarget:
+    iOS: "17.0"
+    watchOS: "10.0"
+
+targets:
+  CopCarPasskey:
+    type: application
+    platform: iOS
+    sources:
+      - CopCarPasskey
+      - CopCarPasskeyShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.CopCar.passkey
+        SWIFT_VERSION: "5.9"
+    capabilities:
+      bluetooth-peripheral: {}
+      bluetooth-central: {}
+
+  CopCarPasskeyWatch:
+    type: application
+    platform: watchOS
+    sources:
+      - CopCarPasskeyWatch
+      - CopCarPasskeyShared
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.CopCar.passkey.watch
+        SWIFT_VERSION: "5.9"
+    capabilities:
+      bluetooth-peripheral: {}
+      bluetooth-central: {}
