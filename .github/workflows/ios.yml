@@ -39,3 +39,30 @@ jobs:
             -destination "${{ env.IOS_DESTINATION }}" \
             CODE_SIGNING_ALLOWED=NO \
             | xcpretty
+
+      - name: Archive iOS app
+        working-directory: ${{ env.PROJECT_DIR }}
+        run: |
+          set -o pipefail
+          xcodebuild archive \
+            -project CopCarPasskey.xcodeproj \
+            -scheme "${{ env.SCHEME }}" \
+            -destination "generic/platform=iOS" \
+            -archivePath "${{ runner.temp }}/CopCarPasskey.xcarchive" \
+            CODE_SIGNING_ALLOWED=NO \
+            | xcpretty
+
+      - name: Package IPA
+        run: |
+          mkdir -p "${{ runner.temp }}/Payload"
+          cp -r "${{ runner.temp }}/CopCarPasskey.xcarchive/Products/Applications/CopCarPasskey.app" \
+                "${{ runner.temp }}/Payload/"
+          cd "${{ runner.temp }}"
+          zip -r CopCarPasskey.ipa Payload
+
+      - name: Upload IPA
+        uses: actions/upload-artifact@v4
+        with:
+          name: CopCarPasskey-${{ github.sha }}
+          path: ${{ runner.temp }}/CopCarPasskey.ipa
+          retention-days: 14
