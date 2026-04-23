@@ -11,8 +11,8 @@ on:
 env:
   PROJECT_DIR: app/CopCarPasskey
   SCHEME: CopCarPasskey
-  IOS_DESTINATION: "platform=iOS Simulator,name=iPhone 16,OS=latest"
-  WATCHOS_DESTINATION: "platform=watchOS Simulator,name=Apple Watch Series 10 (46mm),OS=latest"
+  IOS_DESTINATION: "platform=iOS Simulator,name=iPhone 16"
+  WATCHOS_DESTINATION: "platform=watchOS Simulator,name=Apple Watch Series 10 (46mm)"
 
 jobs:
   build:
@@ -21,6 +21,21 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
+
+      - name: Select Xcode
+        run: |
+          sudo xcode-select -s /Applications/Xcode_16.2.app/Contents/Developer
+          xcodebuild -version
+
+      - name: Boot iOS simulator
+        run: |
+          UDID=$(xcrun simctl list devices available | grep "iPhone 16 (" | grep -v "Plus\|Pro" | head -1 | sed 's/.*(\([^)]*\)).*/\1/')
+          if [ -z "$UDID" ]; then
+            echo "Available simulators:"; xcrun simctl list devices available
+            exit 1
+          fi
+          xcrun simctl boot "$UDID" || true
+          echo "Booted simulator: $UDID"
 
       - name: Install XcodeGen
         run: brew install xcodegen
@@ -32,19 +47,21 @@ jobs:
       - name: Build iOS target
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
+          set -o pipefail
           xcodebuild build \
             -project CopCarPasskey.xcodeproj \
             -scheme "${{ env.SCHEME }}" \
             -destination "${{ env.IOS_DESTINATION }}" \
             CODE_SIGNING_ALLOWED=NO \
-            | xcpretty && exit ${PIPESTATUS[0]}
+            | xcpretty
 
       - name: Build watchOS target
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
+          set -o pipefail
           xcodebuild build \
             -project CopCarPasskey.xcodeproj \
             -scheme CopCarPasskeyWatch \
             -destination "${{ env.WATCHOS_DESTINATION }}" \
             CODE_SIGNING_ALLOWED=NO \
-            | xcpretty && exit ${PIPESTATUS[0]}
+            | xcpretty
