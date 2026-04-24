@@ -5,10 +5,12 @@ import Security
 enum SecretStore {
     static func save(_ secret: Data) throws {
         let query: [CFString: Any] = [
-            kSecClass:           kSecClassGenericPassword,
-            kSecAttrAccount:     KeychainKeys.sharedSecret,
-            kSecValueData:       secret,
-            kSecAttrAccessible:  kSecAttrAccessibleAfterFirstUnlockThisDeviceOnly
+            kSecClass:              kSecClassGenericPassword,
+            kSecAttrAccount:        KeychainKeys.sharedSecret,
+            kSecValueData:          secret,
+            // AfterFirstUnlock (not ThisDeviceOnly) is required for iCloud Keychain sync
+            kSecAttrAccessible:     kSecAttrAccessibleAfterFirstUnlock,
+            kSecAttrSynchronizable: kCFBooleanTrue!
         ]
         SecItemDelete(query as CFDictionary)
         let status = SecItemAdd(query as CFDictionary, nil)
@@ -19,9 +21,10 @@ enum SecretStore {
 
     static func load() -> Data? {
         let query: [CFString: Any] = [
-            kSecClass:       kSecClassGenericPassword,
-            kSecAttrAccount: KeychainKeys.sharedSecret,
-            kSecReturnData:  true
+            kSecClass:              kSecClassGenericPassword,
+            kSecAttrAccount:        KeychainKeys.sharedSecret,
+            kSecAttrSynchronizable: kCFBooleanTrue!,
+            kSecReturnData:         true
         ]
         var result: AnyObject?
         let status = SecItemCopyMatching(query as CFDictionary, &result)
@@ -31,8 +34,9 @@ enum SecretStore {
 
     static func delete() {
         let query: [CFString: Any] = [
-            kSecClass:       kSecClassGenericPassword,
-            kSecAttrAccount: KeychainKeys.sharedSecret
+            kSecClass:              kSecClassGenericPassword,
+            kSecAttrAccount:        KeychainKeys.sharedSecret,
+            kSecAttrSynchronizable: kCFBooleanTrue!
         ]
         SecItemDelete(query as CFDictionary)
     }
