@@ -20,21 +20,7 @@ targets:
       - CopCarPasskeyShared
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.CopCar.passkey
-        SWIFT_VERSION: "5.9"
-    capabilities:
-      bluetooth-peripheral: {}
-      bluetooth-central: {}
-
-  CopCarPasskeyWatch:
-    type: application
-    platform: watchOS
-    sources:
-      - CopCarPasskeyWatch
-      - CopCarPasskeyShared
-    settings:
-      base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.CopCar.passkey.watch
+        PRODUCT_BUNDLE_IDENTIFIER: com.copcar.passkey
         SWIFT_VERSION: "5.9"
     capabilities:
       bluetooth-peripheral: {}

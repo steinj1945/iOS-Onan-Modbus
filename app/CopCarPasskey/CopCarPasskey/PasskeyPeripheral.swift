@@ -17,7 +17,7 @@ final class PasskeyPeripheral: NSObject, ObservableObject {
     override init() {
         super.init()
         manager = CBPeripheralManager(delegate: self, queue: .global(qos: .background),
-                                      options: [CBPeripheralManagerOptionRestoreIdentifierKey: "com.CopCar.passkey.peripheral"])
+                                      options: [CBPeripheralManagerOptionRestoreIdentifierKey: "com.copcar.passkey.peripheral"])
     }
 
     func startAdvertising() {
