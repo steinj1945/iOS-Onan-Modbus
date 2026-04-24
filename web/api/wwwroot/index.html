@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Onan Passkey Portal</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <div id="app">
+    <section id="view-login" class="view">
+      <div class="center-wrap">
+        <form id="login-form" class="card login-card">
+          <h1>Onan Passkey</h1>
+          <p id="login-error" class="error hidden"></p>
+          <label>
+            Username
+            <input id="username" autocomplete="username" required />
+          </label>
+          <label>
+            Password
+            <input id="password" type="password" autocomplete="current-password" required />
+          </label>
+          <button type="submit">Sign in</button>
+        </form>
+      </div>
+    </section>
+
+    <section id="view-app" class="view hidden">
+      <nav class="topbar">
+        <div class="topbar-left">
+          <strong>Onan Passkey</strong>
+          <button class="tab-btn" data-tab="keys">Keys</button>
+          <button class="tab-btn" data-tab="logs">Audit Log</button>
+        </div>
+        <button id="signout" class="ghost">Sign out</button>
+      </nav>
+
+      <main class="container">
+        <section id="tab-keys" class="tab-panel">
+          <h2>Passkeys</h2>
+
+          <form id="create-key-form" class="card inline-form">
+            <input id="new-key-label" placeholder="Label (e.g. John's iPhone)" required />
+            <button id="issue-key" type="submit">Issue Key</button>
+          </form>
+
+          <div id="qr-modal" class="modal hidden" role="dialog" aria-modal="true">
+            <div class="card modal-content">
+              <h3 id="qr-title">Scan to enroll</h3>
+              <p class="muted">This QR URL is shown once. Open it on the enrollment device.</p>
+              <div id="qr-inline" class="qr-inline" aria-label="Enrollment QR code"></div>
+              <a id="qr-link" class="mono" href="#" target="_blank" rel="noreferrer">Open enrollment link</a>
+              <p id="qr-secret" class="mono"></p>
+              <button id="close-modal" type="button">Done - I've used the link</button>
+            </div>
+          </div>
+
+          <div class="card table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Label</th>
+                  <th>Hint</th>
+                  <th>Issued</th>
+                  <th>Status</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="keys-body"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="tab-logs" class="tab-panel hidden">
+          <h2>Audit Log</h2>
+          <div class="card table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Time</th>
+                  <th>Event</th>
+                  <th>Key</th>
+                  <th>Device</th>
+                </tr>
+              </thead>
+              <tbody id="logs-body"></tbody>
+            </table>
+          </div>
+          <div class="pager">
+            <button id="prev-page" class="ghost" type="button">Prev</button>
+            <span id="page-info" class="muted"></span>
+            <button id="next-page" class="ghost" type="button">Next</button>
+          </div>
+        </section>
+      </main>
+    </section>
+  </div>
+
+  <script src="/app.js" defer></script>
+</body>
+</html>
