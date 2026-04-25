@@ -1,5 +1,6 @@
 #include "ProvisioningMode.h"
 #include "SessionCrypto.h"
+#include "LedController.h"
 #include "Config.h"
 #include <WiFi.h>
 #include <WebServer.h>
@@ -8,7 +9,8 @@
 #include <Arduino.h>
 
 void provisioning_run() {
-    digitalWrite(PIN_STATUS_LED, HIGH);
+    led_set(LED_AP_MODE);
+    led_update();
     Serial.println("Provisioning mode: starting WiFi AP");
 
     WiFi.softAP(PROV_SSID, PROV_PASS);
@@ -64,7 +66,7 @@ void provisioning_run() {
     uint32_t start = millis();
     while (!done && (millis() - start < PROV_TIMEOUT_MS)) {
         server.handleClient();
-        digitalWrite(PIN_STATUS_LED, (millis() / 500) % 2);  // 500 ms blink
+        led_update();
     }
 
     server.stop();
@@ -75,6 +77,5 @@ void provisioning_run() {
         ESP.restart();
     } else {
         Serial.println("Provisioning timed out. Continuing normal boot.");
-        digitalWrite(PIN_STATUS_LED, LOW);
     }
 }

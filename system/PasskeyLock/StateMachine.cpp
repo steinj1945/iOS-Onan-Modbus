@@ -3,6 +3,7 @@
 #include "RelayController.h"
 #include "CryptoAuth.h"
 #include "SessionCrypto.h"
+#include "LedController.h"
 #include "Config.h"
 #include <Arduino.h>
 #include <esp_sleep.h>
@@ -14,9 +15,25 @@ static uint32_t s_state_enter = 0;
 static uint8_t  s_nonce[32];
 
 static void enter(State next) {
-    // State-entry actions
-    if (next == State::SCANNING) bt_scan_start();
-
+    switch (next) {
+        case State::SCANNING:
+            bt_scan_start();
+            led_set(LED_SEARCHING);
+            break;
+        case State::CONNECTING:
+            led_set(LED_FOUND);
+            break;
+        case State::AUTHENTICATING:
+            led_set(LED_FOUND);
+            break;
+        case State::UNLOCKED:
+            led_set(LED_ENGAGED);
+            break;
+        case State::SLEEP:
+            led_set(LED_READY);
+            led_update();
+            break;
+    }
     s_state       = next;
     s_state_enter = millis();
 }
@@ -29,21 +46,19 @@ static void go_sleep() {
     relay_off();
     bt_disconnect();
     g_button_pressed = false;
-    digitalWrite(PIN_STATUS_LED, LOW);
 
     // ESP32 deep sleep — woken by button (active LOW on PIN_BUTTON).
-    // Unlike AVR sleep, deep sleep is a full CPU restart; execution
-    // resumes at setup(), not here. sm_init() detects the wakeup cause
-    // and skips straight to SCANNING.
+    // Deep sleep is a full CPU restart; execution resumes at setup().
+    // sm_init() detects the wakeup cause and skips straight to SCANNING.
     esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BUTTON, LOW);
     esp_deep_sleep_start();
 }
 
 void sm_init() {
-    pinMode(PIN_BUTTON, INPUT_PULLUP);
+    pinMode(PIN_BUTTON,     INPUT_PULLUP);
+    pinMode(PIN_BUTTON_AUX, INPUT_PULLUP);
 
-    // In normal (non-sleep-wake) running, catch button presses via interrupt
-    // for the UNLOCKED → SLEEP transition.
+    // Catch button presses while awake (UNLOCKED → SLEEP transition).
     attachInterrupt(digitalPinToInterrupt(PIN_BUTTON), []() {
         g_button_pressed = true;
     }, FALLING);
@@ -51,7 +66,6 @@ void sm_init() {
     relay_init();
     bt_init();
 
-    // If we woke from deep sleep via the button, skip SLEEP and scan immediately.
     if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
         enter(State::SCANNING);
     } else {
@@ -60,6 +74,8 @@ void sm_init() {
 }
 
 void sm_update() {
+    led_update();
+
     switch (s_state) {
 
     case State::SLEEP:
@@ -68,8 +84,6 @@ void sm_update() {
         break;
 
     case State::SCANNING:
-        // Slow blink while scanning
-        digitalWrite(PIN_STATUS_LED, (millis() / 400) % 2);
         if (g_button_pressed) { g_button_pressed = false; enter(State::SLEEP); break; }
         if (timed_out(SCAN_TIMEOUT_MS))               { enter(State::SLEEP);    break; }
         if (bt_scan_found()) {
@@ -79,11 +93,9 @@ void sm_update() {
         break;
 
     case State::CONNECTING:
-        // Fast blink while negotiating
-        digitalWrite(PIN_STATUS_LED, (millis() / 100) % 2);
         if (timed_out(CONNECT_TIMEOUT_MS))  { enter(State::SCANNING); break; }
         if (!bt_connected())                { break; }
-        // Connection and characteristic discovery are done — send encrypted challenge
+        // Connection established — send encrypted challenge
         random_nonce(s_nonce, sizeof(s_nonce));
         {
             uint8_t enc_challenge[SESSION_PACKET_LEN];
@@ -104,12 +116,17 @@ void sm_update() {
             if (hmac_verify(s_nonce, sizeof(s_nonce),
                             response, sizeof(response),
                             HMAC_KEY, HMAC_KEY_LEN)) {
+                led_set(LED_AUTH_PASS);
+                led_update();
                 relay_on();
                 bt_notify_status(0x01);
-                digitalWrite(PIN_STATUS_LED, HIGH);
                 enter(State::UNLOCKED);
             } else {
                 bt_notify_status(0x00);
+                // Show auth-fail pattern for 1.5 s before sleeping
+                led_set(LED_AUTH_FAIL);
+                uint32_t t = millis();
+                while (millis() - t < 1500) led_update();
                 enter(State::SLEEP);
             }
         }
