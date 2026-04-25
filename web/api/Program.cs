@@ -3,8 +3,8 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
-using OnanPasskeyApi.Data;
-using OnanPasskeyApi.Services;
+using CopCarPasseyApi.Data;
+using CopCarPasseyApi.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,7 +34,7 @@ builder.Services.AddAuthorization();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Onan Passkey API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "CopCar Passkey API", Version = "v1" });
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         In   = ParameterLocation.Header,
@@ -53,14 +53,31 @@ builder.Services.AddCors(o => o.AddDefaultPolicy(p =>
 
 var app = builder.Build();
 
-// Auto-migrate on startup
+// Auto-migrate and seed on startup
 using (var scope = app.Services.CreateScope())
-    scope.ServiceProvider.GetRequiredService<AppDbContext>().Database.Migrate();
+{
+    var db = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+    db.Database.Migrate();
+
+    if (!db.AdminUsers.Any())
+    {
+        db.AdminUsers.Add(new CopCarPasseyApi.Models.AdminUser
+        {
+            Username     = "admin",
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword("admin"),
+            CreatedAt    = DateTime.UtcNow
+        });
+        db.SaveChanges();
+    }
+}
 
 app.UseSwagger();
 app.UseSwaggerUI();
+app.UseDefaultFiles();
+app.UseStaticFiles();
 app.UseCors();
 app.UseAuthentication();
 app.UseAuthorization();
 app.MapControllers();
+app.MapFallbackToFile("index.html");
 app.Run();
