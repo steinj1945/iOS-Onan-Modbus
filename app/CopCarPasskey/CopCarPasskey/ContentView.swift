@@ -5,6 +5,7 @@ struct ContentView: View {
     @EnvironmentObject var peripheral: PasskeyPeripheral
     @EnvironmentObject var enrollment: EnrollmentManager
     @State private var showScanner = false
+    @State private var authPulse = false
 
     var body: some View {
         NavigationStack {
@@ -59,7 +60,6 @@ struct ContentView: View {
         }
     }
 
-    // Drop your stock photo into Assets.xcassets as "AppBackground" to replace the dark placeholder
     private var background: some View {
         ZStack {
             Image("AppBackground")
@@ -75,22 +75,54 @@ struct ContentView: View {
         .ignoresSafeArea()
     }
 
+    private var ringColor: Color {
+        if peripheral.isAuthenticating { return .yellow }
+        if peripheral.isAdvertising    { return .green }
+        return .gray
+    }
+
+    private var ringOpacity: Double {
+        if peripheral.isAuthenticating { return authPulse ? 0.6 : 0.15 }
+        if peripheral.isAdvertising    { return 0.35 }
+        return 0.12
+    }
+
+    private var statusText: String {
+        if peripheral.isAuthenticating { return "Authenticating…" }
+        if peripheral.isAdvertising    { return "Broadcasting" }
+        return "Inactive"
+    }
+
     private var content: some View {
         VStack(spacing: 32) {
             // Status ring
             ZStack {
                 Circle()
-                    .stroke(peripheral.isAdvertising ? Color.green.opacity(0.2) : Color.gray.opacity(0.1), lineWidth: 20)
+                    .stroke(ringColor.opacity(ringOpacity), lineWidth: 20)
                     .frame(width: 160, height: 160)
+
                 Image(systemName: enrollment.isEnrolled ? "key.fill" : "key.slash")
                     .font(.system(size: 52))
-                    .foregroundStyle(peripheral.isAdvertising ? .green : .gray)
+                    .foregroundStyle(ringColor)
+                    .symbolEffect(.pulse, isActive: peripheral.isAuthenticating)
+            }
+            .onChange(of: peripheral.isAuthenticating) { _, authenticating in
+                if authenticating {
+                    withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
+                        authPulse = true
+                    }
+                } else {
+                    withAnimation(.easeInOut(duration: 0.3)) {
+                        authPulse = false
+                    }
+                }
             }
 
             VStack(spacing: 6) {
-                Text(peripheral.isAdvertising ? "Broadcasting" : "Inactive")
+                Text(statusText)
                     .font(.title2.bold())
                     .foregroundStyle(.white)
+                    .animation(.default, value: statusText)
                 if enrollment.isEnrolled {
                     Text(enrollment.enrolledLabel)
                         .font(.subheadline)

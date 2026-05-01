@@ -7,6 +7,7 @@ import Combine
 @MainActor
 final class PasskeyPeripheral: NSObject, ObservableObject {
     @Published private(set) var isAdvertising = false
+    @Published private(set) var isAuthenticating = false
     @Published private(set) var lastEvent: String = "Idle"
 
     private var manager: CBPeripheralManager!
@@ -89,6 +90,25 @@ extension PasskeyPeripheral: CBPeripheralManagerDelegate {
         }
     }
 
+    // Device connected and subscribed to the response notify characteristic
+    nonisolated func peripheralManager(_ p: CBPeripheralManager,
+                                       central: CBCentral,
+                                       didSubscribeTo characteristic: CBCharacteristic) {
+        Task { @MainActor in
+            lastEvent = "Device connected"
+        }
+    }
+
+    // Device unsubscribed (disconnected)
+    nonisolated func peripheralManager(_ p: CBPeripheralManager,
+                                       central: CBCentral,
+                                       didUnsubscribeFrom characteristic: CBCharacteristic) {
+        Task { @MainActor in
+            isAuthenticating = false
+            lastEvent = "Device disconnected"
+        }
+    }
+
     nonisolated func peripheralManager(_ p: CBPeripheralManager,
                                        willRestoreState dict: [String: Any]) {
         // State restoration after app is killed and relaunched by iOS BT subsystem
@@ -96,18 +116,27 @@ extension PasskeyPeripheral: CBPeripheralManagerDelegate {
 
     @MainActor
     private func handleChallenge(_ encPacket: Data, peripheral: CBPeripheralManager) {
+        isAuthenticating = true
+        lastEvent = "Authenticating…"
+
         guard let secret = SecretStore.load() else {
+            isAuthenticating = false
             lastEvent = "No key enrolled"
             return
         }
         guard let plainNonce = try? SessionCrypto.decrypt(encPacket) else {
+            isAuthenticating = false
             lastEvent = "Decryption failed"
             return
         }
         let mac = HMACAuth.response(for: plainNonce, secret: secret)
-        guard let encResponse = try? SessionCrypto.encrypt(mac) else { return }
+        guard let encResponse = try? SessionCrypto.encrypt(mac) else {
+            isAuthenticating = false
+            return
+        }
         peripheral.updateValue(encResponse, for: responseChar, onSubscribedCentrals: nil)
-        lastEvent = "Challenge answered – \(Date().formatted(date: .omitted, time: .shortened))"
+        isAuthenticating = false
+        lastEvent = "Unlocked – \(Date().formatted(date: .omitted, time: .shortened))"
     }
 
     // Arduino sent a STATUS notification (0x01 = unlocked, 0x00 = locked)
