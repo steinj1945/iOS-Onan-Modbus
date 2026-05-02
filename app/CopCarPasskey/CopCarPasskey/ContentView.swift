@@ -2,7 +2,7 @@ import SwiftUI
 import VisionKit
 
 struct ContentView: View {
-    @EnvironmentObject var peripheral: PasskeyPeripheral
+    @EnvironmentObject var central: PasskeyCentral
     @EnvironmentObject var enrollment: EnrollmentManager
     @State private var showScanner = false
     @State private var authPulse = false
@@ -76,20 +76,20 @@ struct ContentView: View {
     }
 
     private var ringColor: Color {
-        if peripheral.isAuthenticating { return .yellow }
-        if peripheral.isAdvertising    { return .green }
+        if central.isAuthenticating { return .yellow }
+        if central.isScanning       { return .green }
         return .gray
     }
 
     private var ringOpacity: Double {
-        if peripheral.isAuthenticating { return authPulse ? 0.6 : 0.15 }
-        if peripheral.isAdvertising    { return 0.35 }
+        if central.isAuthenticating { return authPulse ? 0.6 : 0.15 }
+        if central.isScanning       { return 0.35 }
         return 0.12
     }
 
     private var statusText: String {
-        if peripheral.isAuthenticating { return "Authenticating…" }
-        if peripheral.isAdvertising    { return "Broadcasting" }
+        if central.isAuthenticating { return "Authenticating…" }
+        if central.isScanning       { return "Scanning" }
         return "Inactive"
     }
 
@@ -104,9 +104,9 @@ struct ContentView: View {
                 Image(systemName: enrollment.isEnrolled ? "key.fill" : "key.slash")
                     .font(.system(size: 52))
                     .foregroundStyle(ringColor)
-                    .symbolEffect(.pulse, isActive: peripheral.isAuthenticating)
+                    .symbolEffect(.pulse, isActive: central.isAuthenticating)
             }
-            .onChange(of: peripheral.isAuthenticating) { _, authenticating in
+            .onChange(of: central.isAuthenticating) { _, authenticating in
                 if authenticating {
                     withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
                         authPulse = true
@@ -128,7 +128,7 @@ struct ContentView: View {
                         .font(.subheadline)
                         .foregroundStyle(.white.opacity(0.75))
                 }
-                Text(peripheral.lastEvent)
+                Text(central.lastEvent)
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.55))
             }

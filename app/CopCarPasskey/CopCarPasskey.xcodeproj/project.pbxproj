@@ -20,6 +20,7 @@
 		8A666C858598E1BE5540F04B /* HMACAuth.swift in Sources */ = {isa = PBXBuildFile; fileRef = 040C521D5B09690F70C3FE8C /* HMACAuth.swift */; };
 		AB0C7157C662072236F5FFC9 /* WatchSyncManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 74E62C8E96E5B021E0C71485 /* WatchSyncManager.swift */; };
 		AB359BAE2FA41F7D00FA6A13 /* QRScannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB359BAD2FA41F7D00FA6A13 /* QRScannerView.swift */; };
+		ABE4EE192FA680620023F74F /* PasskeyCentral.swift in Sources */ = {isa = PBXBuildFile; fileRef = ABE4EE182FA680620023F74F /* PasskeyCentral.swift */; };
 		F7A63B61059369021E902A89 /* PasskeyPeripheral.swift in Sources */ = {isa = PBXBuildFile; fileRef = A414CA326D5F34F11652923B /* PasskeyPeripheral.swift */; };
 /* End PBXBuildFile section */
 
@@ -39,6 +40,7 @@
 		92A298979DC746A1EDF15D1D /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
 		A414CA326D5F34F11652923B /* PasskeyPeripheral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasskeyPeripheral.swift; sourceTree = "<group>"; };
 		AB359BAD2FA41F7D00FA6A13 /* QRScannerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = QRScannerView.swift; sourceTree = "<group>"; };
+		ABE4EE182FA680620023F74F /* PasskeyCentral.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PasskeyCentral.swift; sourceTree = "<group>"; };
 		D7ED719BB7ACBEA636B1AEED /* EnrollmentManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EnrollmentManager.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -85,6 +87,7 @@
 				8DFF2BE661EFA55C6A52F3C9 /* SettingsView.swift */,
 				5796019B2F9B0428001108DF /* Assets 2.xcassets */,
 				AB359BAD2FA41F7D00FA6A13 /* QRScannerView.swift */,
+				ABE4EE182FA680620023F74F /* PasskeyCentral.swift */,
 			);
 			path = CopCarPasskey;
 			sourceTree = "<group>";
@@ -158,6 +161,7 @@
 				01962255BCCE86E9F79EF52C /* Constants.swift in Sources */,
 				772E6D552B395E2F4EA80264 /* ContentView.swift in Sources */,
 				38CDD4AFE7A582152087AD93 /* CopCarPasskeyApp.swift in Sources */,
+				ABE4EE192FA680620023F74F /* PasskeyCentral.swift in Sources */,
 				7BFB8C94F598A0140FF6CBE7 /* EnrollmentManager.swift in Sources */,
 				8A666C858598E1BE5540F04B /* HMACAuth.swift in Sources */,
 				F7A63B61059369021E902A89 /* PasskeyPeripheral.swift in Sources */,

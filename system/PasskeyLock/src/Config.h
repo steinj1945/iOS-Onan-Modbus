@@ -18,7 +18,7 @@
 
 // ── Timing (ms) ──────────────────────────────────────────────────
 #define SCAN_TIMEOUT_MS         15000   // Give up scanning after 15 s
-#define CONNECT_TIMEOUT_MS       8000   // Give up connecting after 8 s
+#define CONNECT_TIMEOUT_MS      30000   // Give up connecting after 30 s
 #define AUTH_TIMEOUT_MS          5000   // Give up waiting for HMAC after 5 s
 #define UNLOCK_AUTO_CLOSE_MS   300000   // Auto-relock after 5 min
 
