@@ -24,8 +24,8 @@ bool session_init() {
     int ret = mbedtls_ecp_group_load(&grp, MBEDTLS_ECP_DP_CURVE25519);
     if (ret == 0) ret = mbedtls_mpi_read_binary(&d, ESP32_PRIVATE_KEY, 32);
     // Curve25519 public key is the u-coordinate (32 bytes, little-endian in X25519)
-    if (ret == 0) ret = mbedtls_mpi_read_binary(&Q.X, IOS_PUBLIC_KEY, 32);
-    if (ret == 0) ret = mbedtls_mpi_lset(&Q.Z, 1);
+    if (ret == 0) ret = mbedtls_mpi_read_binary(&Q.MBEDTLS_PRIVATE(X), IOS_PUBLIC_KEY, 32);
+    if (ret == 0) ret = mbedtls_mpi_lset(&Q.MBEDTLS_PRIVATE(Z), 1);
     if (ret == 0) ret = mbedtls_ecdh_compute_shared(&grp, &z, &Q, &d, NULL, NULL);
 
     uint8_t shared[32] = {};

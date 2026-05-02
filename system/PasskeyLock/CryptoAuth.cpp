@@ -1,5 +1,6 @@
 #include "CryptoAuth.h"
 #include <Arduino.h>
+#include <esp_random.h>
 #include <string.h>
 
 // ── Minimal SHA-256 ───────────────────────────────────────────────
@@ -123,8 +124,5 @@ bool hmac_verify(const uint8_t *nonce,    uint8_t nonce_len,
 }
 
 void random_nonce(uint8_t *buf, uint8_t len) {
-    for (uint8_t i = 0; i < len; i++) {
-        // XOR two analog reads for minimal entropy on AVR
-        buf[i] = (uint8_t)(analogRead(A0) ^ analogRead(A1) ^ (millis() & 0xFF));
-    }
+    esp_fill_random(buf, len);
 }

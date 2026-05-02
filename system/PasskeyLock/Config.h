@@ -1,4 +1,5 @@
 #pragma once
+#include <stdint.h>
 
 // ── Pin assignments (ESP32) ───────────────────────────────────────
 #define PIN_BUTTON      32  // GPIO32 — primary button (RTC-capable; wakes deep sleep)
@@ -10,10 +11,10 @@
 
 // ── BLE service / characteristic UUIDs ──────────────────────────
 // Must match the iOS/Watch app exactly.
-#define UUID_SERVICE    "A1B2C3D4-E5F6-7890-ABCD-EF1234567890"
-#define UUID_CHALLENGE  "A1B2C3D4-E5F6-7890-ABCD-EF1234567891"
-#define UUID_RESPONSE   "A1B2C3D4-E5F6-7890-ABCD-EF1234567892"
-#define UUID_STATUS     "A1B2C3D4-E5F6-7890-ABCD-EF1234567893"
+#define UUID_SERVICE    "6CEC9D24-598B-40CF-AA8F-A2BE12A626A6"
+#define UUID_CHALLENGE  "FE879FA1-26CE-4CEB-AC6A-0FAE75D25E03"
+#define UUID_RESPONSE   "8EDE1ACC-39C6-4600-A06D-2D431C78ECB9"
+#define UUID_STATUS     "84962402-30AF-4AD3-A1AB-55696CFE1AB4"
 
 // ── Timing (ms) ──────────────────────────────────────────────────
 #define SCAN_TIMEOUT_MS         15000   // Give up scanning after 15 s

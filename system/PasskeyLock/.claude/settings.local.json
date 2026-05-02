@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd.exe /c \"where arduino-cli 2>nul & where arduino-cli.exe 2>nul\")",
+      "Bash(cmd.exe /c \"dir \"\"C:\\\\Users\\\\stein\\\\AppData\\\\Local\\\\Arduino15\"\" /b\")"
+    ]
+  }
+}
