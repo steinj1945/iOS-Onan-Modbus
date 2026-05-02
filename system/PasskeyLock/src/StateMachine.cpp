@@ -14,7 +14,19 @@ static State    s_state       = State::SLEEP;
 static uint32_t s_state_enter = 0;
 static uint8_t  s_nonce[32];
 
+static const char* state_name(State s) {
+    switch (s) {
+        case State::SLEEP:          return "SLEEP";
+        case State::SCANNING:       return "SCANNING";
+        case State::CONNECTING:     return "CONNECTING";
+        case State::AUTHENTICATING: return "AUTHENTICATING";
+        case State::UNLOCKED:       return "UNLOCKED";
+        default:                    return "?";
+    }
+}
+
 static void enter(State next) {
+    Serial.printf("[SM] %s → %s\n", state_name(s_state), state_name(next));
     switch (next) {
         case State::SCANNING:
             bt_scan_start();
@@ -93,35 +105,53 @@ void sm_update() {
         break;
 
     case State::CONNECTING:
-        if (timed_out(CONNECT_TIMEOUT_MS))  { enter(State::SCANNING); break; }
+        if (timed_out(CONNECT_TIMEOUT_MS))  { Serial.println("[SM] connect timeout"); enter(State::SCANNING); break; }
         if (!bt_connected())                { break; }
         // Connection established — send encrypted challenge
         random_nonce(s_nonce, sizeof(s_nonce));
+        Serial.print("[SM] nonce: ");
+        for (int i = 0; i < (int)sizeof(s_nonce); i++) Serial.printf("%02x", s_nonce[i]);
+        Serial.println();
         {
             uint8_t enc_challenge[SESSION_PACKET_LEN];
-            if (!session_encrypt(s_nonce, enc_challenge)) { enter(State::SLEEP); break; }
+            if (!session_encrypt(s_nonce, enc_challenge)) {
+                Serial.println("[SM] session_encrypt failed");
+                enter(State::SLEEP); break;
+            }
+            Serial.print("[SM] challenge (enc): ");
+            for (int i = 0; i < SESSION_PACKET_LEN; i++) Serial.printf("%02x", enc_challenge[i]);
+            Serial.println();
             bt_send_challenge(enc_challenge, SESSION_PACKET_LEN);
+            Serial.println("[SM] challenge sent");
         }
         enter(State::AUTHENTICATING);
         break;
 
     case State::AUTHENTICATING:
-        if (timed_out(AUTH_TIMEOUT_MS)) { enter(State::SLEEP); break; }
+        if (timed_out(AUTH_TIMEOUT_MS)) { Serial.println("[SM] auth timeout — no response"); enter(State::SLEEP); break; }
         if (!bt_response_ready())       { break; }
         {
             uint8_t enc_response[SESSION_PACKET_LEN];
             uint8_t response[32];
             bt_read_response(enc_response, sizeof(enc_response));
-            if (!session_decrypt(enc_response, response)) { enter(State::SLEEP); break; }
+            Serial.print("[SM] response (enc): ");
+            for (int i = 0; i < SESSION_PACKET_LEN; i++) Serial.printf("%02x", enc_response[i]);
+            Serial.println();
+            if (!session_decrypt(enc_response, response)) {
+                Serial.println("[SM] response decrypt failed");
+                enter(State::SLEEP); break;
+            }
             if (hmac_verify(s_nonce, sizeof(s_nonce),
                             response, sizeof(response),
                             HMAC_KEY, HMAC_KEY_LEN)) {
+                Serial.println("[SM] *** UNLOCKED ***");
                 led_set(LED_AUTH_PASS);
                 led_update();
                 relay_on();
                 bt_notify_status(0x01);
                 enter(State::UNLOCKED);
             } else {
+                Serial.println("[SM] auth FAIL — sleeping");
                 bt_notify_status(0x00);
                 // Show auth-fail pattern for 1.5 s before sleeping
                 led_set(LED_AUTH_FAIL);
