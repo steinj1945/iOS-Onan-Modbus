@@ -6,6 +6,7 @@ struct ContentView: View {
     @EnvironmentObject var enrollment: EnrollmentManager
     @State private var showScanner = false
     @State private var authPulse = false
+    @State private var showLockConfirm = false
 
     var body: some View {
         NavigationStack {
@@ -76,18 +77,21 @@ struct ContentView: View {
     }
 
     private var ringColor: Color {
+        if peripheral.isKeyLocked      { return .yellow }
         if peripheral.isAuthenticating { return .yellow }
         if peripheral.isAdvertising    { return .green }
         return .gray
     }
 
     private var ringOpacity: Double {
+        if peripheral.isKeyLocked      { return 0.30 }
         if peripheral.isAuthenticating { return authPulse ? 0.6 : 0.15 }
         if peripheral.isAdvertising    { return 0.35 }
         return 0.12
     }
 
     private var statusText: String {
+        if peripheral.isKeyLocked      { return "Locked" }
         if peripheral.isAuthenticating { return "Authenticating…" }
         if peripheral.isAdvertising    { return "Broadcasting" }
         return "Inactive"
@@ -131,6 +135,33 @@ struct ContentView: View {
                 Text(peripheral.lastEvent)
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.55))
+            }
+
+            if enrollment.isEnrolled {
+                Button {
+                    if peripheral.isKeyLocked {
+                        peripheral.unlockKey()
+                    } else {
+                        showLockConfirm = true
+                    }
+                } label: {
+                    Label(
+                        peripheral.isKeyLocked ? "Unlock Key" : "Lock Key",
+                        systemImage: peripheral.isKeyLocked ? "lock.open.fill" : "lock.fill"
+                    )
+                    .font(.headline)
+                    .padding(.horizontal, 24)
+                    .padding(.vertical, 12)
+                    .background(peripheral.isKeyLocked ? Color.yellow.opacity(0.20) : Color.white.opacity(0.15))
+                    .foregroundStyle(peripheral.isKeyLocked ? .yellow : .white)
+                    .clipShape(Capsule())
+                }
+                .confirmationDialog("Lock this key?", isPresented: $showLockConfirm, titleVisibility: .visible) {
+                    Button("Lock", role: .destructive) { peripheral.lockKey() }
+                    Button("Cancel", role: .cancel) {}
+                } message: {
+                    Text("The app will stop broadcasting and won't respond to unlock requests until you unlock it again.")
+                }
             }
 
             if !enrollment.isEnrolled {

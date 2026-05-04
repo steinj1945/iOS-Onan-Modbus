@@ -9,6 +9,7 @@ final class PasskeyPeripheral: NSObject, ObservableObject {
     @Published private(set) var isAdvertising = false
     @Published private(set) var isAuthenticating = false
     @Published private(set) var lastEvent: String = "Idle"
+    @Published private(set) var isKeyLocked: Bool = UserDefaults.standard.bool(forKey: "keyLocked")
 
     private var manager: CBPeripheralManager!
     private var challengeChar: CBCharacteristic?
@@ -28,6 +29,10 @@ final class PasskeyPeripheral: NSObject, ObservableObject {
     }
 
     func startAdvertising() {
+        guard !isKeyLocked else {
+            log("startAdvertising skipped — key is locked")
+            return
+        }
         guard manager.state == .poweredOn else {
             log("startAdvertising called but BT not powered on (state=\(manager.state.rawValue))")
             return
@@ -39,6 +44,22 @@ final class PasskeyPeripheral: NSObject, ObservableObject {
         manager.stopAdvertising()
         isAdvertising = false
         log("advertising stopped")
+    }
+
+    func lockKey() {
+        isKeyLocked = true
+        UserDefaults.standard.set(true, forKey: "keyLocked")
+        stopAdvertising()
+        lastEvent = "Key locked"
+        log("key locked")
+    }
+
+    func unlockKey() {
+        isKeyLocked = false
+        UserDefaults.standard.set(false, forKey: "keyLocked")
+        lastEvent = "Key unlocked"
+        log("key unlocked")
+        startAdvertising()
     }
 
     private func setupServices() {
