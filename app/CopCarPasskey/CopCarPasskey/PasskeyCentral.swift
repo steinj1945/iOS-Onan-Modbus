@@ -15,6 +15,7 @@ import CoreBluetooth
 /// The ESP32 must wait at least 20s after a connection before timing out.
 @MainActor
 final class PasskeyCentral: NSObject, ObservableObject {
+    @Published private(set) var isEnabled: Bool
     @Published private(set) var isScanning = false
     @Published private(set) var isConnected = false
     @Published private(set) var isAuthenticating = false
@@ -22,6 +23,7 @@ final class PasskeyCentral: NSObject, ObservableObject {
     @Published private(set) var lastEvent: String = "Idle"
 
     private var manager: CBCentralManager!
+    private static let enabledKey    = "com.copcar.passkey.keyEnabled"
     private let peripheralIDKey = "com.copcar.passkey.peripheralUUID"
 
     // Accessed from BLE queue delegate callbacks; written before any concurrent reads.
@@ -31,12 +33,38 @@ final class PasskeyCentral: NSObject, ObservableObject {
     nonisolated(unsafe) private var incomingBuffer = Data()
 
     override init() {
+        // Default to enabled on first launch; persist the user's choice thereafter.
+        let defaults = UserDefaults.standard
+        isEnabled = defaults.object(forKey: PasskeyCentral.enabledKey) == nil
+            ? true
+            : defaults.bool(forKey: PasskeyCentral.enabledKey)
         super.init()
         manager = CBCentralManager(
             delegate: self,
             queue: .global(qos: .userInitiated),
             options: [CBCentralManagerOptionRestoreIdentifierKey: "com.copcar.passkey.central"]
         )
+    }
+
+    // MARK: - Enable / disable
+
+    func enable() {
+        isEnabled = true
+        UserDefaults.standard.set(true, forKey: Self.enabledKey)
+        lastEvent = "Key enabled"
+        if manager.state == .poweredOn { startScanning() }
+    }
+
+    func disable() {
+        isEnabled = false
+        isScanning = false
+        isConnected = false
+        isKeyPresent = false
+        isAuthenticating = false
+        lastEvent = "Key disabled"
+        UserDefaults.standard.set(false, forKey: Self.enabledKey)
+        manager.stopScan()
+        if let p = carPeripheral { manager.cancelPeripheralConnection(p) }
     }
 
     // MARK: - Scanning
@@ -82,7 +110,7 @@ extension PasskeyCentral: CBCentralManagerDelegate {
     nonisolated func centralManagerDidUpdateState(_ central: CBCentralManager) {
         Task { @MainActor in
             log("BT state → \(central.state.rawValue)")
-            if central.state == .poweredOn {
+            if central.state == .poweredOn && isEnabled {
                 startScanning()
             } else {
                 isScanning = false
@@ -126,7 +154,7 @@ extension PasskeyCentral: CBCentralManagerDelegate {
             log("connect failed: \(error?.localizedDescription ?? "unknown") — falling back to full scan")
             lastEvent = "Connection failed"
             // Skip cache so we don't retry a broken cached UUID immediately.
-            startScanning(useCached: false)
+            if isEnabled { startScanning(useCached: false) }
         }
     }
 
@@ -143,7 +171,7 @@ extension PasskeyCentral: CBCentralManagerDelegate {
             isAuthenticating = false
             log("disconnected — resuming scan")
             lastEvent = "Disconnected"
-            if manager.state == .poweredOn { startScanning() }
+            if manager.state == .poweredOn && isEnabled { startScanning() }
         }
     }
 

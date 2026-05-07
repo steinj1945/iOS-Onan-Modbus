@@ -91,6 +91,7 @@ struct ContentView: View {
     }
 
     private var statusText: String {
+        if !central.isEnabled       { return "Key Off" }
         if central.isAuthenticating { return "Authenticating…" }
         if central.isKeyPresent     { return "Key Present" }
         if central.isConnected      { return "Connected" }
@@ -125,6 +126,19 @@ struct ContentView: View {
                 Text(central.lastEvent)
                     .font(.caption)
                     .foregroundStyle(.white.opacity(0.55))
+            }
+
+            if enrollment.isEnrolled {
+                Toggle(isOn: Binding(
+                    get: { central.isEnabled },
+                    set: { $0 ? central.enable() : central.disable() }
+                )) {
+                    Label("Key Active", systemImage: "key.fill")
+                        .foregroundStyle(.white)
+                }
+                .toggleStyle(.switch)
+                .tint(.green)
+                .padding(.horizontal, 48)
             }
 
             if !enrollment.isEnrolled {
