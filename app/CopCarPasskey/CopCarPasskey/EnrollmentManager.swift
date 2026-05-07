@@ -51,6 +51,21 @@ final class EnrollmentManager: ObservableObject {
         refresh()
     }
 
+    /// Builds the same enrollment deep-link the QR code contains.
+    /// Share this URL to save the key — tapping it re-enrolls on any device.
+    var backupURL: URL? {
+        guard let entry = SecretStore.loadEntry() else { return nil }
+        let hex = entry.secret.map { String(format: "%02x", $0) }.joined()
+        var components = URLComponents()
+        components.scheme = DeepLink.scheme
+        components.host   = DeepLink.enrollHost
+        components.queryItems = [
+            URLQueryItem(name: "secret", value: hex),
+            URLQueryItem(name: "label",  value: entry.label)
+        ]
+        return components.url
+    }
+
     enum EnrollmentError: LocalizedError {
         case badScheme(String?)
         case badHost(String?)

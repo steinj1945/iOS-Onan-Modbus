@@ -6,6 +6,8 @@ struct SettingsView: View {
     @StateObject private var watchSync  = WatchSyncManager.shared
     @State private var showConfirmRemove = false
     @State private var syncFeedback: String?
+    @State private var iCloudStatus: String?
+    @State private var iCloudBusy = false
 
     var body: some View {
         List {
@@ -28,6 +30,76 @@ struct SettingsView: View {
                     Text("No key enrolled. Scan a QR code from the admin portal.")
                         .foregroundStyle(.secondary)
                         .font(.callout)
+                }
+            }
+
+            if enrollment.isEnrolled {
+                Section {
+                    Button {
+                        iCloudBusy = true
+                        iCloudStatus = nil
+                        Task {
+                            defer { iCloudBusy = false }
+                            guard let entry = SecretStore.loadEntry() else { return }
+                            do {
+                                try await iCloudBackup.save(secret: entry.secret, label: entry.label)
+                                iCloudStatus = "Backed up successfully"
+                            } catch {
+                                iCloudStatus = error.localizedDescription
+                            }
+                        }
+                    } label: {
+                        if iCloudBusy {
+                            Label("Saving…", systemImage: "icloud.and.arrow.up")
+                        } else {
+                            Label("Back Up to iCloud", systemImage: "icloud.and.arrow.up")
+                        }
+                    }
+                    .disabled(iCloudBusy)
+
+                    Button {
+                        iCloudBusy = true
+                        iCloudStatus = nil
+                        Task {
+                            defer { iCloudBusy = false }
+                            do {
+                                if let result = try await iCloudBackup.load() {
+                                    try SecretStore.save(result.secret, label: result.label)
+                                    enrollment.refresh()
+                                    let when = result.savedAt.formatted(date: .abbreviated, time: .shortened)
+                                    iCloudStatus = "Restored key from \(when)"
+                                } else {
+                                    iCloudStatus = "No iCloud backup found"
+                                }
+                            } catch {
+                                iCloudStatus = error.localizedDescription
+                            }
+                        }
+                    } label: {
+                        if iCloudBusy {
+                            Label("Restoring…", systemImage: "icloud.and.arrow.down")
+                        } else {
+                            Label("Restore from iCloud", systemImage: "icloud.and.arrow.down")
+                        }
+                    }
+                    .disabled(iCloudBusy)
+
+                    if let status = iCloudStatus {
+                        Text(status)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if let url = enrollment.backupURL {
+                        ShareLink(item: url, subject: Text("CopCar Key Backup")) {
+                            Label("Share Key as Link", systemImage: "square.and.arrow.up")
+                        }
+                    }
+                } header: {
+                    Text("Backup & Restore")
+                } footer: {
+                    Text("iCloud backup appears in Settings → [your name] → iCloud → Manage Storage. Restore is available even after reinstalling the app.")
+                        .font(.caption)
                 }
             }
 
