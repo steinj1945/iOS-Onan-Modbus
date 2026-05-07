@@ -5,7 +5,6 @@ struct ContentView: View {
     @EnvironmentObject var central: PasskeyCentral
     @EnvironmentObject var enrollment: EnrollmentManager
     @State private var showScanner = false
-    @State private var authPulse = false
 
     var body: some View {
         NavigationStack {
@@ -77,18 +76,24 @@ struct ContentView: View {
 
     private var ringColor: Color {
         if central.isAuthenticating { return .yellow }
+        if central.isKeyPresent     { return .green }
+        if central.isConnected      { return .blue }
         if central.isScanning       { return .green }
         return .gray
     }
 
     private var ringOpacity: Double {
-        if central.isAuthenticating { return authPulse ? 0.6 : 0.15 }
+        if central.isAuthenticating { return 0.5 }
+        if central.isKeyPresent     { return 0.5 }
+        if central.isConnected      { return 0.35 }
         if central.isScanning       { return 0.35 }
         return 0.12
     }
 
     private var statusText: String {
         if central.isAuthenticating { return "Authenticating…" }
+        if central.isKeyPresent     { return "Key Present" }
+        if central.isConnected      { return "Connected" }
         if central.isScanning       { return "Scanning" }
         return "Inactive"
     }
@@ -105,17 +110,6 @@ struct ContentView: View {
                     .font(.system(size: 52))
                     .foregroundStyle(ringColor)
                     .symbolEffect(.pulse, isActive: central.isAuthenticating)
-            }
-            .onChange(of: central.isAuthenticating) { _, authenticating in
-                if authenticating {
-                    withAnimation(.easeInOut(duration: 0.7).repeatForever(autoreverses: true)) {
-                        authPulse = true
-                    }
-                } else {
-                    withAnimation(.easeInOut(duration: 0.3)) {
-                        authPulse = false
-                    }
-                }
             }
 
             VStack(spacing: 6) {

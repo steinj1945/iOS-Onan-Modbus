@@ -16,7 +16,9 @@ import CoreBluetooth
 @MainActor
 final class PasskeyCentral: NSObject, ObservableObject {
     @Published private(set) var isScanning = false
+    @Published private(set) var isConnected = false
     @Published private(set) var isAuthenticating = false
+    @Published private(set) var isKeyPresent = false
     @Published private(set) var lastEvent: String = "Idle"
 
     private var manager: CBCentralManager!
@@ -108,6 +110,9 @@ extension PasskeyCentral: CBCentralManagerDelegate {
         peripheral.delegate = self
         peripheral.discoverServices([BLEConstants.serviceUUID])
         Task { @MainActor in
+            isConnected = true
+            isKeyPresent = false
+            lastEvent = "Connected"
             log("connected — discovering services")
         }
     }
@@ -117,6 +122,7 @@ extension PasskeyCentral: CBCentralManagerDelegate {
                                     error: Error?) {
         carPeripheral = nil
         Task { @MainActor in
+            isConnected = false
             log("connect failed: \(error?.localizedDescription ?? "unknown") — falling back to full scan")
             lastEvent = "Connection failed"
             // Skip cache so we don't retry a broken cached UUID immediately.
@@ -132,9 +138,11 @@ extension PasskeyCentral: CBCentralManagerDelegate {
         responseChar  = nil
         incomingBuffer = Data()
         Task { @MainActor in
+            isConnected = false
+            isKeyPresent = false
+            isAuthenticating = false
             log("disconnected — resuming scan")
             lastEvent = "Disconnected"
-            isAuthenticating = false
             if manager.state == .poweredOn { startScanning() }
         }
     }
@@ -227,6 +235,7 @@ extension PasskeyCentral: CBPeripheralDelegate {
         Task { @MainActor in
             UserDefaults.standard.set(peripheralID, forKey: peripheralIDKey)
             isAuthenticating = false
+            isKeyPresent = true
             lastEvent = "Authenticated – \(ts)"
         }
     }

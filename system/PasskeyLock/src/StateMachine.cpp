@@ -16,7 +16,7 @@ static uint8_t  s_nonce[32];
 
 static const char* state_name(State s) {
     switch (s) {
-        case State::SLEEP:          return "SLEEP";
+        case State::SLEEP:          return "IDLE";
         case State::SCANNING:       return "SCANNING";
         case State::CONNECTING:     return "CONNECTING";
         case State::AUTHENTICATING: return "AUTHENTICATING";
@@ -28,6 +28,12 @@ static const char* state_name(State s) {
 static void enter(State next) {
     Serial.printf("[SM] %s → %s\n", state_name(s_state), state_name(next));
     switch (next) {
+        case State::SLEEP:
+            if (relay_state()) relay_off();
+            bt_disconnect();
+            g_button_pressed = false;
+            led_set(LED_READY);
+            break;
         case State::SCANNING:
             bt_advertise_start();
             led_set(LED_SEARCHING);
@@ -41,10 +47,6 @@ static void enter(State next) {
         case State::UNLOCKED:
             led_set(LED_ENGAGED);
             break;
-        case State::SLEEP:
-            led_set(LED_READY);
-            led_update();
-            break;
     }
     s_state       = next;
     s_state_enter = millis();
@@ -54,14 +56,9 @@ static bool timed_out(uint32_t limit_ms) {
     return (millis() - s_state_enter) >= limit_ms;
 }
 
-static void go_sleep() {
-    relay_off();
-    bt_disconnect();
-    g_button_pressed = false;
-
-    // ESP32 deep sleep — woken by button (active LOW on PIN_BUTTON).
-    // Deep sleep is a full CPU restart; execution resumes at setup().
-    // sm_init() detects the wakeup cause and skips straight to SCANNING.
+static void go_deep_sleep() {
+    led_set(LED_READY);
+    led_update();
     esp_sleep_enable_ext0_wakeup((gpio_num_t)PIN_BUTTON, LOW);
     esp_deep_sleep_start();
 }
@@ -70,7 +67,6 @@ void sm_init() {
     pinMode(PIN_BUTTON,     INPUT_PULLUP);
     pinMode(PIN_BUTTON_AUX, INPUT_PULLUP);
 
-    // Catch button presses while awake (UNLOCKED → SLEEP transition).
     attachInterrupt(digitalPinToInterrupt(PIN_BUTTON), []() {
         g_button_pressed = true;
     }, FALLING);
@@ -78,6 +74,7 @@ void sm_init() {
     relay_init();
     bt_init();
 
+    // Button woke us from deep sleep — skip the idle wait, go straight to scanning.
     if (esp_sleep_get_wakeup_cause() == ESP_SLEEP_WAKEUP_EXT0) {
         enter(State::SCANNING);
     } else {
@@ -91,8 +88,13 @@ void sm_update() {
     switch (s_state) {
 
     case State::SLEEP:
-        go_sleep();
-        // Does not return — ESP32 restarts after button wakes it.
+        if (g_button_pressed) {
+            g_button_pressed = false;
+            enter(State::SCANNING);
+        } else if (timed_out(IDLE_TIMEOUT_MS)) {
+            Serial.println("[SM] idle timeout — sleeping");
+            go_deep_sleep();
+        }
         break;
 
     case State::SCANNING:
@@ -105,7 +107,6 @@ void sm_update() {
         if (timed_out(CONNECT_TIMEOUT_MS)) { Serial.println("[SM] subscribe timeout"); enter(State::SLEEP); break; }
         if (!bt_connected())               { enter(State::SCANNING); break; }
         if (bt_central_subscribed()) {
-            // Challenge was already sent inside the CCCD callback; retrieve nonce for HMAC verify.
             bt_get_nonce(s_nonce, sizeof(s_nonce));
             Serial.print("[SM] nonce: ");
             for (int i = 0; i < (int)sizeof(s_nonce); i++) Serial.printf("%02x", s_nonce[i]);
@@ -137,8 +138,7 @@ void sm_update() {
                 relay_on();
                 enter(State::UNLOCKED);
             } else {
-                Serial.println("[SM] auth FAIL — sleeping");
-                // Show auth-fail pattern for 1.5 s before sleeping
+                Serial.println("[SM] auth FAIL");
                 led_set(LED_AUTH_FAIL);
                 uint32_t t = millis();
                 while (millis() - t < 1500) led_update();

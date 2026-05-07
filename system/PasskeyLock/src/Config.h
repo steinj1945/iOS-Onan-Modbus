@@ -4,7 +4,8 @@
 // ── Pin assignments (ESP32) ───────────────────────────────────────
 #define PIN_BUTTON      32  // GPIO32 — primary button (RTC-capable; wakes deep sleep)
 #define PIN_BUTTON_AUX  33  // GPIO33 — auxiliary button (wired, reserved for future use)
-#define PIN_RELAY       14  // GPIO14 — relay IN (HIGH = energised / open)
+#define PIN_RELAY_SET   14  // GPIO14 — latching relay SET coil   (pulse HIGH to latch ON)
+#define PIN_RELAY_RESET 12  // GPIO12 — latching relay RESET coil (pulse HIGH to latch OFF)
 #define PIN_LED_RED     25  // GPIO25 — red   LED
 #define PIN_LED_YELLOW  26  // GPIO26 — yellow LED
 #define PIN_LED_GREEN   27  // GPIO27 — green  LED
@@ -16,7 +17,11 @@
 #define UUID_RESPONSE   "8EDE1ACC-39C6-4600-A06D-2D431C78ECB9"
 #define UUID_STATUS     "84962402-30AF-4AD3-A1AB-55696CFE1AB4"
 
+// ── Relay pulse width ────────────────────────────────────────────
+#define RELAY_PULSE_MS  250   // ms to hold SET/RESET coil high
+
 // ── Timing (ms) ──────────────────────────────────────────────────
+#define IDLE_TIMEOUT_MS         30000   // Deep sleep after 30 s of inactivity
 #define SCAN_TIMEOUT_MS         15000   // Give up scanning after 15 s
 #define CONNECT_TIMEOUT_MS      30000   // Give up connecting after 30 s
 #define AUTH_TIMEOUT_MS          5000   // Give up waiting for HMAC after 5 s
